@@ -34,6 +34,8 @@ pub struct Profile {
     pub direction: Direction,
     pub speed: u8,
     pub brightness: Brightness,
+    #[serde(default)]
+    pub base_color: [u8; 3],
 }
 
 impl Default for Profile {
@@ -45,6 +47,7 @@ impl Default for Profile {
             direction: Direction::default(),
             speed: 1,
             brightness: Brightness::default(),
+            base_color: [0, 0, 0],
         }
     }
 }

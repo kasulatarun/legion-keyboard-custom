@@ -8,14 +8,11 @@ use crate::{
 };
 
 pub mod ambient;
-pub mod christmas;
 pub mod default_ui;
-pub mod disco;
-pub mod fade;
 pub mod lightning;
+pub mod monitor;
 pub mod ripple;
 pub mod swipe;
-pub mod temperature;
 pub mod zones;
 
 pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &mut bool, theme: &crate::gui::style::Theme) {

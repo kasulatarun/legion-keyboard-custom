@@ -3,7 +3,7 @@ use legion_rgb_driver::SPEED_RANGE;
 use strum::IntoEnumIterator;
 
 use crate::{
-    enums::{Brightness, Direction},
+    enums::{Brightness, Direction, Effects},
     gui::style::SpacingStyle,
     manager::profile::Profile,
 };
@@ -16,6 +16,7 @@ pub fn show(ui: &mut Ui, profile: &mut Profile, update_lights: &mut bool, spacin
 
         show_brightness(ui, profile, update_lights);
         show_direction(ui, profile, update_lights);
+        show_base_color(ui, profile, update_lights);
         show_effect_settings(ui, profile, update_lights);
     });
 }
@@ -59,4 +60,13 @@ pub fn show_effect_settings(ui: &mut Ui, profile: &mut Profile, update_lights: &
         *update_lights |= ui.add_enabled(profile.effect.takes_speed(), Slider::new(&mut profile.speed, range)).changed();
         ui.label("Speed");
     });
+}
+
+pub fn show_base_color(ui: &mut Ui, profile: &mut Profile, update_lights: &mut bool) {
+    if matches!(profile.effect, Effects::Ripple | Effects::RippleLit) {
+        ui.horizontal(|ui| {
+            *update_lights |= ui.color_edit_button_srgb(&mut profile.base_color).changed();
+            ui.label("Base Color");
+        });
+    }
 }

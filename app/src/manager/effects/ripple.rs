@@ -23,7 +23,7 @@ enum RippleMove {
     Off,
 }
 
-pub fn play(manager: &mut Inner, p: &Profile, base_color: [u8; 3]) {
+pub fn play(manager: &mut Inner, p: &Profile) {
     // Welcome to the definition of i-don't-know-what-im-doing
     let stop_signals = manager.stop_signals.clone();
 
@@ -109,10 +109,11 @@ pub fn play(manager: &mut Inner, p: &Profile, base_color: [u8; 3]) {
 
         let rgb_array = p.rgb_array();
         let mut final_arr: [u8; 12] = [0; 12];
+        // Initialize with base color
         for i in (0..12).step_by(3) {
-            final_arr[i] = base_color[0];
-            final_arr[i + 1] = base_color[1];
-            final_arr[i + 2] = base_color[2];
+            final_arr[i] = p.base_color[0];
+            final_arr[i + 1] = p.base_color[1];
+            final_arr[i + 2] = p.base_color[2];
         }
 
         for (i, ripple_move) in zone_state.iter().enumerate() {

@@ -14,4 +14,5 @@ result
 # Other
 things.md
 *.json
+!vcpkg.json
 .history

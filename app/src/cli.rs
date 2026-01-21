@@ -213,7 +213,9 @@ fn parse_cli() -> Result<CliOutput, CliError> {
                     effect,
                     direction,
                     speed,
+                    speed,
                     brightness,
+                    base_color: [0, 0, 0],
                 };
 
                 if let Some(filename) = save {

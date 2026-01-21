@@ -24,8 +24,6 @@ pub enum Effects {
     },
     Ripple,
     RippleLit,
-    CpuUsage,
-    GpuTemp,
 }
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, EnumIter, EnumString, PartialEq)]

@@ -1,7 +1,7 @@
 use crate::enums::{Direction, Effects, Message};
 
 use crossbeam_channel::{Receiver, Sender};
-use effects::{ambient, lightning, monitor, ripple, swipe};
+use effects::{ambient, lightning, ripple, swipe};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
@@ -190,8 +190,6 @@ impl Inner {
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
                 ambient::play(self, fps, saturation_boost);
             }
-            Effects::CpuUsage => monitor::play_cpu(self),
-            Effects::GpuTemp => monitor::play_gpu(self),
             Effects::SmoothWave { mode, clean_with_black } => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
                 swipe::play(self, profile, mode, clean_with_black);

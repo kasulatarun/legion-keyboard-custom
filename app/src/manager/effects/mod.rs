@@ -10,7 +10,6 @@ use crate::{
 pub mod ambient;
 pub mod default_ui;
 pub mod lightning;
-pub mod monitor;
 pub mod ripple;
 pub mod swipe;
 pub mod zones;

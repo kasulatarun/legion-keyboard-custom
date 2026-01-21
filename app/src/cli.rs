@@ -1,6 +1,6 @@
 use std::{convert::TryInto, path::PathBuf, str::FromStr};
 
-use clap::{arg, command, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use error_stack::{Result, ResultExt};
 use strum::IntoEnumIterator;
 use thiserror::Error;
@@ -212,7 +212,6 @@ fn parse_cli() -> Result<CliOutput, CliError> {
                     rgb_zones: profile::arr_to_zones(rgb_array),
                     effect,
                     direction,
-                    speed,
                     speed,
                     brightness,
                     base_color: [0, 0, 0],

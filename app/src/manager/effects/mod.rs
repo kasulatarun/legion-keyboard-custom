@@ -9,6 +9,7 @@ use crate::{
 
 pub mod ambient;
 pub mod default_ui;
+pub mod audio;
 pub mod lightning;
 pub mod ripple;
 pub mod swipe;
@@ -47,6 +48,16 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                 ui.horizontal(|ui| {
                     *update_lights |= ui.add(Slider::new(saturation_boost, 0.0..=1.0)).changed();
                     ui.label("Saturation Boost");
+                });
+            });
+        }
+        Effects::AudioVisualizer { sensitivity } => {
+            ui.scope(|ui| {
+                ui.style_mut().spacing.item_spacing = theme.spacing.default;
+                show_brightness(ui, profile, update_lights);
+                ui.horizontal(|ui| {
+                    *update_lights |= ui.add(Slider::new(sensitivity, 0.0..=100.0)).changed();
+                    ui.label("Sensitivity");
                 });
             });
         }

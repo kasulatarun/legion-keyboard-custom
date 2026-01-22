@@ -24,6 +24,14 @@ pub enum Effects {
     },
     Ripple,
     RippleLit,
+    AudioVisualizer {
+        #[serde(default = "default_sensitivity")]
+        sensitivity: f32,
+    },
+}
+
+fn default_sensitivity() -> f32 {
+    1.0
 }
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, EnumIter, EnumString, PartialEq)]
@@ -42,7 +50,7 @@ impl PartialEq for Effects {
 #[allow(dead_code)]
 impl Effects {
     pub fn takes_color_array(self) -> bool {
-        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Ripple | Self::RippleLit)
+        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. })
     }
 
     pub fn takes_direction(self) -> bool {
@@ -52,7 +60,7 @@ impl Effects {
     pub fn takes_speed(self) -> bool {
         matches!(
             self,
-            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Ripple | Self::RippleLit
+            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. }
         )
     }
 

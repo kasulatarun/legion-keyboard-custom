@@ -1,7 +1,7 @@
 use crate::enums::{Direction, Effects, Message};
 
 use crossbeam_channel::{Receiver, Sender};
-use effects::{ambient, lightning, ripple, swipe};
+use effects::{ambient, audio, lightning, ripple, swipe};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
@@ -197,6 +197,7 @@ impl Inner {
             Effects::Swipe { mode, clean_with_black } => swipe::play(self, profile, mode, clean_with_black),
             Effects::Ripple => ripple::play(self, profile),
             Effects::RippleLit => ripple::play(self, profile),
+            Effects::AudioVisualizer { sensitivity } => audio::play(self, profile, sensitivity),
         }
     }
 

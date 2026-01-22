@@ -15,13 +15,11 @@ use crate::manager::{profile::Profile, Inner};
 pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
     let stop_signals = manager.stop_signals.clone();
     
-    // RMS / Peak volume calculation
     let volume = Arc::new(std::sync::Mutex::new(0.0f32));
     let volume_clone = volume.clone();
     
     let host = cpal::default_host();
     
-    // On Windows, we try to use the loopback device for system audio
     #[cfg(target_os = "windows")]
     let device = {
         let mut devices = host.output_devices().expect("No output devices");
@@ -34,13 +32,9 @@ pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
 
     let device = match device {
         Some(d) => d,
-        None => {
-            eprintln!("No audio device found");
-            return;
-        }
+        None => return,
     };
 
-    // For loopback on Windows, we need to use a special config or just Stereo Mix if available
     let config = device.default_output_config().expect("Failed to get audio config");
     
     let stream = device.build_input_stream(
@@ -51,7 +45,8 @@ pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
                 max_abs = max_abs.max(sample.abs());
             }
             if let Ok(mut v) = volume_clone.lock() {
-                *v = max_abs;
+                // Smoothing the input volume slightly to avoid jitter
+                *v = (*v * 0.4) + (max_abs * 0.6);
             }
         },
         |err| eprintln!("Audio stream error: {}", err),
@@ -60,44 +55,72 @@ pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
 
     stream.play().expect("Failed to start audio stream");
 
-    let mut last_color_change = Instant::now();
-    let mut current_colors: [[u8; 3]; 4] = [[0; 3]; 4];
     let mut rng = rng();
-
-    // Initialize with random colors
+    let mut zone_intensities = [0.0f32; 4];
+    let mut zone_colors = [[0u8; 3]; 4];
+    
+    // Initialize random colors
     for i in 0..4 {
-        current_colors[i] = [rng.random_range(0..=255), rng.random_range(0..=255), rng.random_range(0..=255)];
+        zone_colors[i] = [rng.random_range(0..=255), rng.random_range(0..=255), rng.random_range(0..=255)];
     }
 
+    let mut last_update = Instant::now();
+    let mut vol_history = Vec::with_capacity(30);
+    let mut beat_cooldown = Instant::now();
+
     while !stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-        let current_volume = if let Ok(v) = volume.lock() {
-            *v
-        } else {
-            0.0
-        };
+        let now = Instant::now();
+        let dt = now.duration_since(last_update).as_secs_f32();
+        last_update = now;
 
-        // Scale volume by sensitivity
-        let intensity = (current_volume * sensitivity).clamp(0.0, 1.0);
+        let current_volume = if let Ok(v) = volume.lock() { *v } else { 0.0 };
+        
+        // Rolling average for beat detection
+        vol_history.push(current_volume);
+        if vol_history.len() > 30 { vol_history.remove(0); }
+        let avg_vol: f32 = vol_history.iter().sum::<f32>() / vol_history.len() as f32;
 
-        // Periodically change base colors if volume is above a threshold (optional)
-        if last_color_change.elapsed() > Duration::from_secs(2) && current_volume > 0.05 {
+        // Peak detection (Beat)
+        // Sensitivity slider adjusts the threshold (0-100, default 1.0)
+        // We'll treat 1.0 as a sane default.
+        let threshold_multiplier = 1.2 + (50.0 / (sensitivity + 0.1)); 
+        let is_beat = current_volume > avg_vol * 1.3 && current_volume > 0.05 && beat_cooldown.elapsed() > Duration::from_millis(80);
+        
+        if is_beat {
+            beat_cooldown = now;
             for i in 0..4 {
-                current_colors[i] = [rng.random_range(0..=255), rng.random_range(0..=255), rng.random_range(0..=255)];
+                zone_intensities[i] = 1.0;
+                // Full randomization on beat
+                zone_colors[i] = [rng.random_range(0..=255), rng.random_range(0..=255), rng.random_range(0..=255)];
             }
-            last_color_change = Instant::now();
         }
 
+        // Decay logic
+        let decay_rate = 6.0; // Rapid decay for "staccato" feel
+        let sens_adj = (sensitivity / 25.0).max(0.1); // Normalize sensitivity
+        
         let mut final_arr: [u8; 12] = [0; 12];
         for i in 0..4 {
-            final_arr[i * 3] = (current_colors[i][0] as f32 * intensity) as u8;
-            final_arr[i * 3 + 1] = (current_colors[i][1] as f32 * intensity) as u8;
-            final_arr[i * 3 + 2] = (current_colors[i][2] as f32 * intensity) as u8;
+            // Decay intensity but don't drop below current scaled volume
+            zone_intensities[i] = (zone_intensities[i] - dt * decay_rate).max(current_volume * sens_adj);
+            
+            let intensity = (zone_intensities[i]).clamp(0.0, 1.0);
+            
+            // Apply brightness from profile as well
+            let brightness_mult = match profile.brightness {
+                crate::enums::Brightness::Low => 0.5,
+                crate::enums::Brightness::High => 1.0,
+            };
+
+            final_arr[i * 3] = (zone_colors[i][0] as f32 * intensity * brightness_mult) as u8;
+            final_arr[i * 3 + 1] = (zone_colors[i][1] as f32 * intensity * brightness_mult) as u8;
+            final_arr[i * 3 + 2] = (zone_colors[i][2] as f32 * intensity * brightness_mult) as u8;
         }
 
         manager.keyboard.set_colors_to(&final_arr).unwrap();
         
-        // Match the update rate (approx 50ms)
-        thread::sleep(Duration::from_millis(50));
+        // ~60 FPS update rate for smooth visuals
+        thread::sleep(Duration::from_millis(16));
     }
     
     drop(stream);

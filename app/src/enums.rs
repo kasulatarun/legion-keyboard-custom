@@ -27,11 +27,17 @@ pub enum Effects {
     AudioVisualizer {
         #[serde(default = "default_sensitivity")]
         sensitivity: f32,
+        #[serde(default = "default_random_colors")]
+        random_colors: bool,
     },
 }
 
 fn default_sensitivity() -> f32 {
     1.0
+}
+
+fn default_random_colors() -> bool {
+    true
 }
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, EnumIter, EnumString, PartialEq)]

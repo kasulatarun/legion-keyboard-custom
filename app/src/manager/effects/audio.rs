@@ -12,7 +12,7 @@ use rand::{rng, Rng};
 
 use crate::manager::{profile::Profile, Inner};
 
-pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
+pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32, random_colors: bool) {
     let stop_signals = manager.stop_signals.clone();
     
     let volume = Arc::new(std::sync::Mutex::new(0.0f32));
@@ -81,17 +81,16 @@ pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
         let avg_vol: f32 = vol_history.iter().sum::<f32>() / vol_history.len() as f32;
 
         // Peak detection (Beat)
-        // Sensitivity slider adjusts the threshold (0-100, default 1.0)
-        // We'll treat 1.0 as a sane default.
-        let threshold_multiplier = 1.2 + (50.0 / (sensitivity + 0.1)); 
         let is_beat = current_volume > avg_vol * 1.3 && current_volume > 0.05 && beat_cooldown.elapsed() > Duration::from_millis(80);
         
         if is_beat {
             beat_cooldown = now;
             for i in 0..4 {
                 zone_intensities[i] = 1.0;
-                // Full randomization on beat
-                zone_colors[i] = [rng.random_range(0..=255), rng.random_range(0..=255), rng.random_range(0..=255)];
+                if random_colors {
+                    // Full randomization on beat
+                    zone_colors[i] = [rng.random_range(0..=255), rng.random_range(0..=255), rng.random_range(0..=255)];
+                }
             }
         }
 
@@ -112,9 +111,15 @@ pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
                 crate::enums::Brightness::High => 1.0,
             };
 
-            final_arr[i * 3] = (zone_colors[i][0] as f32 * intensity * brightness_mult) as u8;
-            final_arr[i * 3 + 1] = (zone_colors[i][1] as f32 * intensity * brightness_mult) as u8;
-            final_arr[i * 3 + 2] = (zone_colors[i][2] as f32 * intensity * brightness_mult) as u8;
+            let color = if random_colors {
+                zone_colors[i]
+            } else {
+                profile.rgb_zones[i].rgb
+            };
+
+            final_arr[i * 3] = (color[0] as f32 * intensity * brightness_mult) as u8;
+            final_arr[i * 3 + 1] = (color[1] as f32 * intensity * brightness_mult) as u8;
+            final_arr[i * 3 + 2] = (color[2] as f32 * intensity * brightness_mult) as u8;
         }
 
         manager.keyboard.set_colors_to(&final_arr).unwrap();

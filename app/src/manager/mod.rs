@@ -197,7 +197,7 @@ impl Inner {
             Effects::Swipe { mode, clean_with_black } => swipe::play(self, profile, mode, clean_with_black),
             Effects::Ripple => ripple::play(self, profile),
             Effects::RippleLit => ripple::play(self, profile),
-            Effects::AudioVisualizer { sensitivity } => audio::play(self, profile, sensitivity),
+            Effects::AudioVisualizer { sensitivity, random_colors } => audio::play(self, profile, sensitivity, random_colors),
         }
     }
 

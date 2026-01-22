@@ -51,7 +51,7 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                 });
             });
         }
-        Effects::AudioVisualizer { sensitivity } => {
+        Effects::AudioVisualizer { sensitivity, random_colors } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;
                 show_brightness(ui, profile, update_lights);
@@ -59,6 +59,7 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                     *update_lights |= ui.add(Slider::new(sensitivity, 0.0..=100.0)).changed();
                     ui.label("Sensitivity");
                 });
+                *update_lights |= ui.checkbox(random_colors, "Randomize colors").changed();
             });
         }
         _ => {

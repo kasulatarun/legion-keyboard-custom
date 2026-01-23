@@ -10,6 +10,7 @@ use crate::{
 pub mod ambient;
 pub mod default_ui;
 pub mod audio;
+pub mod emergency;
 pub mod lightning;
 pub mod ripple;
 pub mod swipe;
@@ -60,6 +61,19 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                     ui.label("Sensitivity");
                 });
                 *update_lights |= ui.checkbox(random_colors, "Randomize colors").changed();
+            });
+        }
+        Effects::Emergency { emergency_type } => {
+            ui.scope(|ui| {
+                ui.style_mut().spacing.item_spacing = theme.spacing.default;
+                show_brightness(ui, profile, update_lights);
+                ui.horizontal(|ui| {
+                    ComboBox::from_label("Style").selected_text(format!("{:?}", emergency_type)).show_ui(ui, |ui| {
+                        for e_type in crate::enums::EmergencyType::iter() {
+                            *update_lights |= ui.selectable_value(emergency_type, e_type, format!("{:?}", e_type)).changed();
+                        }
+                    });
+                });
             });
         }
         _ => {

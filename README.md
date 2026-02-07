@@ -2,10 +2,11 @@
 
 **⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
 
-Legion RGB Control is a tool for controlling the RGB backlight on Lenovo Legion and Ideapad laptops.
+Legion RGB Control is a tool for controlling the RGB backlight on Lenovo Legion, Lenovo LOQ and Ideapad laptops.
 
 ## Download
 Builds are available on the [releases tab](https://github.com/KnightroParth/legion-keyboard-custom/releases).
+Based on 4JX's [L5P-Keyboard-RGB](https://github.com/4JX/L5P-Keyboard-RGB)
 
 ## Available Effects
 - **Static**: Selected colors stay constant.
@@ -14,10 +15,15 @@ Builds are available on the [releases tab](https://github.com/KnightroParth/legi
 - **Wave (Left/Right)**: Classic wave effect.
 - **Lightning**: Random flashes of light.
 - **AmbientLight**: Reacts to screen content.
-- **Disco**: Party mode!
-- **Christmas**: Festive colors.
-- **Fade**: Dims lights after inactivity.
-- **Temperature**: Based on CPU temperature (Linux only).
+- **SmoothWave**: Smooth wave implementation.
+- **Swipe**: Transitions colors from side to side.
+- **Ripple / RippleLit**: Interactive ripple effects.
+- **Audio Visualizer**: Reacts to system audio.
+- **Frequency Visualizer**: High-detail audio visualizer.
+- **System Monitor**: Displays CPU/RAM usage.
+- **WPM Heat Map**: Displays typing speed.
+- **Fire / Ocean Wave / Meteor**: Environmental effects.
+- **Pomodoro**: Productivity timer.
 
 ## Usage
 ### Command Line Interface
@@ -36,8 +42,9 @@ legion-kb-rgb set -e SmoothWave -s 4 -b 2 -d Left
 Tested on:
 - Legion 5 (Pro) 2020-2024
 - Ideapad Gaming 3 2021-2024
+- LOQ 2023-2025
 
-**Note:** Legion 7(i) and models with white-only backlights are currently not supported.
+**Note:** Legion 7(i) and all models with white-only backlights are currently not supported.
 
 ## Building from Source
 Requires Rust and Git.

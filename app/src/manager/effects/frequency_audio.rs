@@ -1,6 +1,6 @@
 use std::{
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::Ordering,
         Arc,
         Mutex,
     },
@@ -113,7 +113,7 @@ pub fn play(manager: &mut Inner, profile: &Profile, sensitivity: f32) {
         let sens_adj = sensitivity * 0.01;
         bands[0] = (bands[0] * 0.05 * sens_adj).min(1.0);
         bands[1] = (bands[1] * 0.01 * sens_adj).min(1.0);
-        bands[2] = (bands[1]); // Keep symetric for mids
+        bands[2] = bands[1]; // Keep symetric for mids
         bands[3] = (bands[3] * 0.02 * sens_adj).min(1.0);
 
         let mut final_arr: [u8; 12] = [0; 12];

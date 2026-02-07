@@ -12,7 +12,7 @@ pub fn play(manager: &mut Inner, profile: &Profile) {
     let stop_signals = manager.stop_signals.clone();
     
     let mut sys = System::new_with_specifics(
-        RefreshKind::new()
+        RefreshKind::nothing()
             .with_cpu(CpuRefreshKind::everything())
             .with_memory(),
     );

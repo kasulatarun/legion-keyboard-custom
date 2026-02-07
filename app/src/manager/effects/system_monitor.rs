@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use sysinfo::{System, CpuRefreshKind, RefreshKind};
+use sysinfo::{System, CpuRefreshKind, RefreshKind, MemoryRefreshKind};
 
 use crate::manager::{profile::Profile, Inner};
 
@@ -14,7 +14,7 @@ pub fn play(manager: &mut Inner, profile: &Profile) {
     let mut sys = System::new_with_specifics(
         RefreshKind::nothing()
             .with_cpu(CpuRefreshKind::everything())
-            .with_memory(),
+            .with_memory(MemoryRefreshKind::everything()),
     );
 
     while !stop_signals.manager_stop_signal.load(Ordering::SeqCst) {

@@ -30,16 +30,6 @@ pub enum Effects {
         #[serde(default = "default_random_colors")]
         random_colors: bool,
     },
-    Emergency {
-        emergency_type: EmergencyType,
-    },
-}
-
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, Debug, IntoStaticStr, Default, PartialEq, Eq)]
-pub enum EmergencyType {
-    #[default]
-    Police,
-    Ambulance,
 }
 
 fn default_sensitivity() -> f32 {
@@ -66,7 +56,7 @@ impl PartialEq for Effects {
 #[allow(dead_code)]
 impl Effects {
     pub fn takes_color_array(self) -> bool {
-        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. } | Self::Emergency { .. })
+        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. })
     }
 
     pub fn takes_direction(self) -> bool {
@@ -76,7 +66,7 @@ impl Effects {
     pub fn takes_speed(self) -> bool {
         matches!(
             self,
-            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. } | Self::Emergency { .. }
+            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. }
         )
     }
 

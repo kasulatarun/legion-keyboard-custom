@@ -58,6 +58,3 @@ Requires Rust and Git.
    ```sh
    cargo build --release
    ```
-
----
-Special thanks to legendk95 for the initial reverse engineering work.

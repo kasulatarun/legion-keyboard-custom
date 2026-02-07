@@ -1,7 +1,7 @@
 use crate::enums::{Direction, Effects, Message};
 
 use crossbeam_channel::{Receiver, Sender};
-use effects::{ambient, audio, lightning, ripple, swipe};
+use effects::{ambient, audio, custom, frequency_audio, lightning, pomodoro, ripple, swipe, system_monitor, wpm};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
@@ -198,6 +198,13 @@ impl Inner {
             Effects::Ripple => ripple::play(self, profile),
             Effects::RippleLit => ripple::play(self, profile),
             Effects::AudioVisualizer { sensitivity, random_colors } => audio::play(self, profile, sensitivity, random_colors),
+            Effects::SystemMonitor => system_monitor::play(self, profile),
+            Effects::WpmHeatMap => wpm::play(self, profile),
+            Effects::Fire => custom::play_fire(self, profile),
+            Effects::OceanWave => custom::play_ocean(self, profile),
+            Effects::Meteor => custom::play_meteor(self, profile),
+            Effects::Pomodoro { duration_mins } => pomodoro::play(self, profile, duration_mins),
+            Effects::FrequencyVisualizer { sensitivity } => frequency_audio::play(self, profile, sensitivity),
         }
     }
 

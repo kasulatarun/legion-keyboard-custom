@@ -30,6 +30,23 @@ pub enum Effects {
         #[serde(default = "default_random_colors")]
         random_colors: bool,
     },
+    SystemMonitor,
+    WpmHeatMap,
+    Fire,
+    OceanWave,
+    Meteor,
+    Pomodoro {
+        #[serde(default = "default_pomodoro_duration")]
+        duration_mins: u32,
+    },
+    FrequencyVisualizer {
+        #[serde(default = "default_sensitivity")]
+        sensitivity: f32,
+    },
+}
+
+fn default_pomodoro_duration() -> u32 {
+    25
 }
 
 fn default_sensitivity() -> f32 {
@@ -56,7 +73,7 @@ impl PartialEq for Effects {
 #[allow(dead_code)]
 impl Effects {
     pub fn takes_color_array(self) -> bool {
-        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. })
+        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. } | Self::Fire | Self::OceanWave | Self::Meteor | Self::Pomodoro { .. } | Self::FrequencyVisualizer { .. })
     }
 
     pub fn takes_direction(self) -> bool {
@@ -66,7 +83,7 @@ impl Effects {
     pub fn takes_speed(self) -> bool {
         matches!(
             self,
-            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. }
+            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Ripple | Self::RippleLit | Self::AudioVisualizer { .. } | Self::Fire | Self::OceanWave | Self::Meteor | Self::FrequencyVisualizer { .. }
         )
     }
 

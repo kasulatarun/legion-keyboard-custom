@@ -10,9 +10,14 @@ use crate::{
 pub mod ambient;
 pub mod default_ui;
 pub mod audio;
+pub mod frequency_audio;
 pub mod lightning;
 pub mod ripple;
 pub mod swipe;
+pub mod system_monitor;
+pub mod wpm;
+pub mod custom;
+pub mod pomodoro;
 pub mod zones;
 
 pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &mut bool, theme: &crate::gui::style::Theme) {
@@ -60,6 +65,26 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                     ui.label("Sensitivity");
                 });
                 *update_lights |= ui.checkbox(random_colors, "Randomize colors").changed();
+            });
+        }
+        Effects::Pomodoro { duration_mins } => {
+            ui.scope(|ui| {
+                ui.style_mut().spacing.item_spacing = theme.spacing.default;
+                show_brightness(ui, profile, update_lights);
+                ui.horizontal(|ui| {
+                    *update_lights |= ui.add(Slider::new(duration_mins, 1..=60)).changed();
+                    ui.label("Duration (mins)");
+                });
+            });
+        }
+        Effects::FrequencyVisualizer { sensitivity } => {
+            ui.scope(|ui| {
+                ui.style_mut().spacing.item_spacing = theme.spacing.default;
+                show_brightness(ui, profile, update_lights);
+                ui.horizontal(|ui| {
+                    *update_lights |= ui.add(Slider::new(sensitivity, 0.0..=100.0)).changed();
+                    ui.label("Sensitivity");
+                });
             });
         }
         _ => {

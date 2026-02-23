@@ -1,7 +1,5 @@
 # Legion RGB Control
 
-**⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
-
 Legion RGB Control is a tool for controlling the RGB backlight on Lenovo Legion, Lenovo LOQ and Ideapad laptops.
 
 ## Download

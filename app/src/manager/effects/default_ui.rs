@@ -63,7 +63,7 @@ pub fn show_effect_settings(ui: &mut Ui, profile: &mut Profile, update_lights: &
 }
 
 pub fn show_base_color(ui: &mut Ui, profile: &mut Profile, update_lights: &mut bool) {
-    if matches!(profile.effect, Effects::Ripple | Effects::RippleLit) {
+    if matches!(profile.effect, Effects::Ripple | Effects::RippleLit | Effects::Heartbeat) {
         ui.horizontal(|ui| {
             *update_lights |= ui.color_edit_button_srgb(&mut profile.base_color).changed();
             ui.label("Base Color");

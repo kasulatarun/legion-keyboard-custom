@@ -45,22 +45,24 @@ pub fn manager_error(ctx: &Context) -> bool {
 
             modal.body(ui, "In certain cases, this may be due to a driver or hardware error.");
 
-            if let Ok(list) = legion_rgb_driver::find_possible_keyboards() {
-                if !list.is_empty() {
-                    modal.body(ui, "A list of possible keyboards was found, please attach it when making an issue:");
-                }
-                Frame::new().fill(Color32::from_gray(20)).inner_margin(5.0).corner_radius(6.0).show(ui, |ui| {
-                    ScrollArea::vertical().show(ui, |ui| {
-                        if list.is_empty() {
-                            ui.label("No candidates found");
-                        } else {
-                            for d in list {
-                                ui.label(d);
-                            }
-                        }
-                    });
-                });
+            let list = legion_rgb_driver::scan_it829x_devices().unwrap_or_default();
+            if !list.is_empty() {
+                modal.body(ui, "A list of possible keyboards was found, please attach it when making an issue:");
             }
+            Frame::new().fill(Color32::from_gray(20)).inner_margin(5.0).corner_radius(6.0).show(ui, |ui| {
+                ScrollArea::vertical().show(ui, |ui| {
+                    if list.is_empty() {
+                        ui.label("No candidates found");
+                    } else {
+                        for d in list {
+                            ui.label(format!(
+                                "VID: {:#06x}, PID: {:#06x}, UsagePage: {:#06x}, Usage: {:#06x}, Product: {}",
+                                d.vendor_id, d.product_id, d.usage_page, d.usage, d.product
+                            ));
+                        }
+                    }
+                });
+            });
         });
 
         modal.buttons(ui, |ui| {

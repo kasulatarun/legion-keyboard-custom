@@ -9,7 +9,7 @@ use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
 use eframe::{
-    egui::{CentralPanel, Context, CornerRadius, Frame, Layout, ScrollArea, Style, TopBottomPanel, ViewportCommand},
+    egui::{CentralPanel, Context, CornerRadius, Frame, Layout, RichText, ScrollArea, Style, TopBottomPanel, ViewportCommand},
     emath::Align,
     epaint::{Color32, Vec2},
     CreationContext,
@@ -57,6 +57,7 @@ pub struct App {
 
 pub enum GuiMessage {
     CycleProfiles,
+    LiveFrame([u8; 12]),
     Quit,
 }
 
@@ -106,7 +107,14 @@ impl App {
     pub fn new(output: OutputType, has_tray: Arc<AtomicBool>, visible: Arc<AtomicBool>) -> Self {
         let (gui_tx, gui_rx) = crossbeam_channel::unbounded::<GuiMessage>();
 
-        let manager_result = EffectManager::new(manager::OperationMode::Gui);
+        let settings: Settings = Settings::load();
+        let manager_result = EffectManager::new(
+            manager::OperationMode::Gui,
+            settings.profiles.clone(),
+            settings.automation_rules.clone(),
+            settings.master_off,
+            Some(gui_tx.clone()),
+        );
 
         let instance_not_unique = if let Err(err) = &manager_result {
             &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
@@ -116,8 +124,12 @@ impl App {
 
         let manager = manager_result.ok();
 
-        let settings: Settings = Settings::load();
-        let Settings { current_profile, profiles, effects } = settings;
+        let Settings {
+            current_profile,
+            profiles,
+            effects,
+            ..
+        } = settings;
 
         let gui_tx_c = gui_tx.clone();
         // Default app state
@@ -214,6 +226,7 @@ impl eframe::App for App {
         if let Ok(message) = self.gui_rx.try_recv() {
             match message {
                 GuiMessage::CycleProfiles => self.cycle_profiles(),
+                GuiMessage::LiveFrame(_) => {},
                 GuiMessage::Quit => self.exit_app(),
             }
         }
@@ -258,7 +271,13 @@ impl eframe::App for App {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         let SavedItems { profiles, custom_effects, .. } = self.saved_items.clone();
 
-        let mut settings = Settings::new(profiles, custom_effects, self.current_profile.clone());
+        let mut settings = Settings::new(
+            profiles,
+            custom_effects,
+            self.current_profile.clone(),
+            false,
+            vec![],
+        );
 
         settings.save();
 
@@ -352,7 +371,7 @@ impl App {
                     .show(ctx, ui, &mut self.current_profile, &mut self.loaded_effect, &self.theme.spacing, &mut self.state_changed);
             });
 
-            ui.vertical_centered_justified(|ui| {
+            ui.vertical(|ui| {
                 if self.loaded_effect.is_playing() && ui.button("Stop custom effect").clicked() {
                     self.loaded_effect.state = State::None;
                     self.state_changed = true;
@@ -364,8 +383,32 @@ impl App {
                     ..Frame::default()
                 }
                 .show(ui, |ui| {
+                    ui.style_mut().wrap_mode = Some(eframe::egui::TextWrapMode::Wrap);
+                    ui.label(RichText::new("Effect Description").strong().size(16.0).color(Color32::from_rgb(220, 230, 245)));
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new(format!("Selected: {}", self.current_profile.effect))
+                            .strong()
+                            .size(15.0)
+                            .color(Color32::from_rgb(110, 190, 255)),
+                    );
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new(self.current_profile.effect.description())
+                            .size(14.0)
+                            .color(Color32::from_rgb(235, 235, 235)),
+                    );
+                });
+                ui.add_space(self.theme.spacing.medium);
+
+                Frame {
+                    corner_radius: CornerRadius::same(6),
+                    fill: Color32::from_gray(20),
+                    ..Frame::default()
+                }
+                .show(ui, |ui| {
                     ui.style_mut().spacing.item_spacing = self.theme.spacing.default;
-                    ScrollArea::vertical().show(ui, |ui| {
+                    ScrollArea::vertical().max_height(420.0).show(ui, |ui| {
                         ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                             for val in Effects::iter() {
                                 let text: &'static str = val.into();

@@ -1,136 +1,86 @@
-use std::{
-    sync::atomic::Ordering,
-    thread,
-    time::{Duration, Instant},
-};
+use std::{ptr::null_mut, sync::atomic::Ordering, thread, time::Duration};
 
-use fast_image_resize as fr;
+use winapi::um::wingdi::{GetDeviceCaps, GetPixel, HORZRES, VERTRES};
+use winapi::um::winuser::{GetDC, ReleaseDC};
 
-use fr::Resizer;
-use scrap::{Capturer, Display, Frame, TraitCapturer, TraitPixelBuffer};
+use crate::manager::{profile::Profile, Inner};
 
-use crate::manager::Inner;
+pub fn play(manager: &mut Inner, profile: &Profile) {
+    let stop_signals = manager.stop_signals.clone();
 
-#[derive(Clone, Copy)]
-struct ScreenDimensions {
-    src: (u32, u32),
-    dest: (u32, u32),
-}
-
-pub fn play(manager: &mut Inner, fps: u8, saturation_boost: f32) {
-    while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-        //Display setup
-        let display = Display::all().unwrap().remove(0);
-
-        let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
-
-        let dimensions = ScreenDimensions {
-            src: (capturer.width() as u32, capturer.height() as u32),
-            dest: (4, 1),
-        };
-
-        let seconds_per_frame = Duration::from_nanos(1_000_000_000 / u64::from(fps));
-        let mut resizer = fr::Resizer::new();
-
-        #[cfg(target_os = "windows")]
-        let mut try_gdi = 1;
-
-        while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
-            let now = Instant::now();
-
-            #[allow(clippy::single_match)]
-            match capturer.frame(seconds_per_frame) {
-                Ok(frame) => {
-                    let rgb = process_frame(frame, dimensions, &mut resizer, saturation_boost);
-
-                    manager.keyboard.set_colors_to(&rgb).unwrap();
-                    #[cfg(target_os = "windows")]
-                    {
-                        try_gdi = 0;
-                    }
-                }
-                Err(error) => match error.kind() {
-                    std::io::ErrorKind::WouldBlock =>
-                    {
-                        #[cfg(target_os = "windows")]
-                        if try_gdi > 0 && !capturer.is_gdi() {
-                            if try_gdi > 3 {
-                                capturer.set_gdi();
-                                try_gdi = 0;
-                            }
-                            try_gdi += 1;
-                        }
-                    }
-                    _ =>
-                    {
-                        #[cfg(windows)]
-                        if !capturer.is_gdi() {
-                            capturer.set_gdi();
-                            continue;
-                        }
-                    }
-                },
-            }
-
-            let elapsed_time = now.elapsed();
-            if elapsed_time < seconds_per_frame {
-                thread::sleep(seconds_per_frame - elapsed_time);
-            }
-        }
-    }
-}
-
-fn process_frame(frame: Frame, dimensions: ScreenDimensions, resizer: &mut Resizer, saturation_boost: f32) -> [u8; 12] {
-    // Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
-    // Read source image from file
-
-    // HACK: Override opacity manually to ensure some kind of output because of jank elsewhere
-    let Frame::PixelBuffer(buf) = frame else {
-        unreachable!("Attempted to extract vec from Texture variant in the Ambient effect");
+    let (fps, vibrance) = match profile.effect {
+        crate::enums::Effects::AmbientLight { fps, vibrance } => (fps, vibrance),
+        _ => (60, 100),
     };
 
-    let frame_vec = buf.data().to_vec();
-    // for rgba in frame_vec.chunks_exact_mut(4) {
-    //     rgba[3] = 255;
-    // }
+    let frame_duration = Duration::from_millis(1000 / fps.max(1) as u64);
+    let vibrance_mult = vibrance as f32 / 100.0;
 
-    let src_image = fr::images::Image::from_vec_u8(dimensions.src.0, dimensions.src.1, frame_vec, fr::PixelType::U8x4).unwrap();
+    unsafe {
+        let hdc_screen = GetDC(null_mut());
+        if hdc_screen.is_null() {
+            return;
+        }
 
-    // Create container for data of destination image
-    let mut dst_image = fr::images::Image::new(dimensions.dest.0, dimensions.dest.1, fr::PixelType::U8x4);
+        let width = GetDeviceCaps(hdc_screen, HORZRES);
+        let height = GetDeviceCaps(hdc_screen, VERTRES);
 
-    // Get mutable view of destination image data
-    // let mut dst_view = dst_image.view_mut();
+        let mut smoothed_arr: [f32; 12] = [0.0; 12];
 
-    // Create Resizer instance and resize source image
-    // into buffer of destination image
-    resizer.resize(&src_image, &mut dst_image, None).unwrap();
+        while !stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+            let mut target_arr: [f32; 12] = [0.0; 12];
 
-    // Divide RGB channels of destination image by alpha
-    // alpha_mul_div.divide_alpha_inplace(&mut dst_view).unwrap();
+            for zone in 0..4 {
+                let start_x = (width / 4) * zone;
+                let end_x = (width / 4) * (zone + 1);
 
-    let bgr_arr = dst_image.buffer();
+                let mut r_total: u64 = 0;
+                let mut g_total: u64 = 0;
+                let mut b_total: u64 = 0;
+                let sample_count = 9;
 
-    // BGRA -> RGBA
-    let mut rgba: [u8; 16] = [0; 16];
-    for (src, dst) in bgr_arr.chunks_exact(4).zip(rgba.chunks_exact_mut(4)) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = src[3];
+                for row in 0..3 {
+                    for col in 0..3 {
+                        let x = start_x + ((end_x - start_x) / 4) * (col + 1);
+                        let y = (height / 4) * (row + 1);
+
+                        let color = GetPixel(hdc_screen, x, y);
+                        r_total += (color & 0xFF) as u64;
+                        g_total += ((color >> 8) & 0xFF) as u64;
+                        b_total += ((color >> 16) & 0xFF) as u64;
+                    }
+                }
+
+                // Average
+                let mut r = (r_total / sample_count) as f32;
+                let mut g = (g_total / sample_count) as f32;
+                let mut b = (b_total / sample_count) as f32;
+
+                // Apply Vibrance
+                let avg = (r + g + b) / 3.0;
+                r = ((r - avg) * vibrance_mult + avg).clamp(0.0, 255.0);
+                g = ((g - avg) * vibrance_mult + avg).clamp(0.0, 255.0);
+                b = ((b - avg) * vibrance_mult + avg).clamp(0.0, 255.0);
+
+                target_arr[zone as usize * 3] = r;
+                target_arr[zone as usize * 3 + 1] = g;
+                target_arr[zone as usize * 3 + 2] = b;
+            }
+
+            // Lerp Smoothing (20% per frame)
+            for i in 0..12 {
+                smoothed_arr[i] += (target_arr[i] - smoothed_arr[i]) * 0.2;
+            }
+
+            let mut final_arr: [u8; 12] = [0; 12];
+            for i in 0..12 {
+                final_arr[i] = smoothed_arr[i] as u8;
+            }
+
+            manager.paint(profile, &final_arr);
+            thread::sleep(frame_duration);
+        }
+
+        ReleaseDC(null_mut(), hdc_screen);
     }
-
-    let mut img = photon_rs::PhotonImage::new(rgba.to_vec(), 4, 1);
-    photon_rs::colour_spaces::saturate_hsv(&mut img, saturation_boost);
-
-    // RGBA -> RGB
-    let raw = img.get_raw_pixels();
-    let mut rgb: [u8; 12] = [0; 12];
-    for (src, dst) in raw.chunks_exact(4).zip(rgb.chunks_exact_mut(3)) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-    }
-
-    rgb
 }

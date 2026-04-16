@@ -1,21 +1,13 @@
-use std::{
-    sync::atomic::Ordering,
-    thread,
-    time::Duration,
-};
+use std::{sync::atomic::Ordering, thread, time::Duration};
 
-use sysinfo::{System, CpuRefreshKind, RefreshKind, MemoryRefreshKind};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 
 use crate::manager::{profile::Profile, Inner};
 
 pub fn play(manager: &mut Inner, profile: &Profile) {
     let stop_signals = manager.stop_signals.clone();
-    
-    let mut sys = System::new_with_specifics(
-        RefreshKind::nothing()
-            .with_cpu(CpuRefreshKind::everything())
-            .with_memory(MemoryRefreshKind::everything()),
-    );
+
+    let mut sys = System::new_with_specifics(RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()).with_memory(MemoryRefreshKind::everything()));
 
     while !stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
         sys.refresh_cpu_all();
@@ -28,17 +20,11 @@ pub fn play(manager: &mut Inner, profile: &Profile) {
 
         // Zones 0 & 1: CPU
         let cpu_color = get_usage_color(cpu_usage);
-        final_arr[0..6].copy_from_slice(&[
-            cpu_color[0], cpu_color[1], cpu_color[2],
-            cpu_color[0], cpu_color[1], cpu_color[2],
-        ]);
+        final_arr[0..6].copy_from_slice(&[cpu_color[0], cpu_color[1], cpu_color[2], cpu_color[0], cpu_color[1], cpu_color[2]]);
 
         // Zones 2 & 3: RAM
         let mem_color = get_usage_color(mem_usage);
-        final_arr[6..12].copy_from_slice(&[
-            mem_color[0], mem_color[1], mem_color[2],
-            mem_color[0], mem_color[1], mem_color[2],
-        ]);
+        final_arr[6..12].copy_from_slice(&[mem_color[0], mem_color[1], mem_color[2], mem_color[0], mem_color[1], mem_color[2]]);
 
         // Apply brightness
         let brightness_mult = match profile.brightness {

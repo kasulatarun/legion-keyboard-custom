@@ -32,7 +32,28 @@ pub fn attach() -> bool {
         return true;
     }
 
-    unsafe { AttachConsole(ATTACH_PARENT_PROCESS) != 0 }
+    if unsafe { AttachConsole(ATTACH_PARENT_PROCESS) != 0 } {
+        // After attaching, we must redirect the standard handles for Rust to recognize them
+        use std::fs::OpenOptions;
+        use std::os::windows::io::IntoRawHandle;
+        use winapi::um::winnt::HANDLE;
+
+        let stdout = OpenOptions::new().write(true).open("CONOUT$");
+        if let Ok(file) = stdout {
+            let handle = file.into_raw_handle() as HANDLE;
+            unsafe { winapi::um::processenv::SetStdHandle(winapi::um::winbase::STD_OUTPUT_HANDLE, handle) };
+        }
+
+        let stderr = OpenOptions::new().write(true).open("CONOUT$");
+        if let Ok(file) = stderr {
+            let handle = file.into_raw_handle() as HANDLE;
+            unsafe { winapi::um::processenv::SetStdHandle(winapi::um::winbase::STD_ERROR_HANDLE, handle) };
+        }
+
+        return true;
+    }
+
+    false
 }
 
 /// Try to attach to a console, and if not, allocate ourselves a new one.

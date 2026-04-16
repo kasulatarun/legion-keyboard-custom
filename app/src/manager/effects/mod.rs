@@ -7,24 +7,45 @@ use crate::{
     manager::profile::Profile,
 };
 
+pub mod aesthetic;
 pub mod ambient;
-pub mod default_ui;
+pub mod apm_pulse;
+
 pub mod audio;
+pub mod battery;
+pub mod biorhythms;
+pub mod collider;
+pub mod custom;
+pub mod cyber;
+pub mod default_ui;
+pub mod fluid_flow;
+pub mod focus_lamp;
 pub mod frequency_audio;
+pub mod ghost_keys;
+pub mod glitch;
+pub mod gravity_well;
+pub mod health_trace;
+pub mod heartbeat;
 pub mod lightning;
+pub mod mental_flow;
+pub mod morse;
+pub mod nature;
+pub mod network;
+pub mod pomodoro;
+pub mod prism_shift;
+pub mod pulse_static;
 pub mod ripple;
+pub mod sonar_ping;
 pub mod swipe;
 pub mod system_monitor;
-pub mod wpm;
-pub mod custom;
-pub mod pomodoro;
+pub mod vhs;
 pub mod zones;
 
 pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &mut bool, theme: &crate::gui::style::Theme) {
     let mut effect = profile.effect;
 
     match &mut effect {
-        Effects::SmoothWave { mode, clean_with_black } | Effects::Swipe { mode, clean_with_black } => {
+        Effects::SmoothWave { mode, clean_with_black } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;
 
@@ -39,23 +60,6 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                 *update_lights |= ui.add_enabled(matches!(mode, SwipeMode::Fill), egui::Checkbox::new(clean_with_black, "Clean with black")).changed();
             });
         }
-        Effects::AmbientLight { fps, saturation_boost } => {
-            ui.scope(|ui| {
-                ui.style_mut().spacing.item_spacing = theme.spacing.default;
-
-                show_brightness(ui, profile, update_lights);
-                show_direction(ui, profile, update_lights);
-
-                ui.horizontal(|ui| {
-                    *update_lights |= ui.add(Slider::new(fps, 1..=60)).changed();
-                    ui.label("FPS");
-                });
-                ui.horizontal(|ui| {
-                    *update_lights |= ui.add(Slider::new(saturation_boost, 0.0..=1.0)).changed();
-                    ui.label("Saturation Boost");
-                });
-            });
-        }
         Effects::AudioVisualizer { sensitivity, random_colors } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;
@@ -67,24 +71,44 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                 *update_lights |= ui.checkbox(random_colors, "Randomize colors").changed();
             });
         }
-        Effects::Pomodoro { duration_mins } => {
+        Effects::PrismShift { speed }
+        | Effects::LightLeak { speed }
+        | Effects::VHSRetro { speed }
+        | Effects::NeonDream { speed }
+        | Effects::SummerRain { speed }
+        | Effects::AuroraBorealis { speed }
+        | Effects::CyberPulse { speed }
+        | Effects::StarryNight { speed }
+        | Effects::SoftBloom { speed }
+        | Effects::SunsetGlow { speed } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;
                 show_brightness(ui, profile, update_lights);
                 ui.horizontal(|ui| {
-                    *update_lights |= ui.add(Slider::new(duration_mins, 1..=60)).changed();
-                    ui.label("Duration (mins)");
+                    let s = 1..=10;
+                    *update_lights |= ui.add(egui::Slider::new(speed, s)).changed();
+                    ui.label("Speed / Intensity");
                 });
             });
         }
-        Effects::FrequencyVisualizer { sensitivity } => {
+        Effects::AmbientLight { fps, vibrance } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;
                 show_brightness(ui, profile, update_lights);
                 ui.horizontal(|ui| {
-                    *update_lights |= ui.add(Slider::new(sensitivity, 0.0..=100.0)).changed();
-                    ui.label("Sensitivity");
+                    *update_lights |= ui.add(egui::Slider::new(fps, 1..=90)).changed();
+                    ui.label("Ambient FPS");
                 });
+                ui.horizontal(|ui| {
+                    *update_lights |= ui.add(egui::Slider::new(vibrance, 0..=255)).changed();
+                    ui.label("Vibrance (Saturation)");
+                });
+            });
+        }
+        Effects::Candlelight => {
+            ui.scope(|ui| {
+                ui.style_mut().spacing.item_spacing = theme.spacing.default;
+                show_brightness(ui, profile, update_lights);
             });
         }
         _ => {

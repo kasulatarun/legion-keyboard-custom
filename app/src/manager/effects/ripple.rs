@@ -1,178 +1,81 @@
-use std::{
-    collections::HashSet,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    thread,
-    time::{Duration, Instant},
-};
-
-use device_query::{DeviceEvents, DeviceEventsHandler, Keycode};
-
+use std::time::{Duration, Instant};
+// use device_query::Keycode;
 use crate::manager::{
     profile::Profile,
-    {effects::zones::KEY_ZONES, Inner},
+    {effects::zones::KEY_ZONES, ActiveRipple, Inner},
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum RippleMove {
-    Center,
-    Left,
-    Right,
-    Off,
-}
+pub fn update(manager: &mut Inner, p: &Profile) {
+    let is_ripple_lit = matches!(p.effect, crate::enums::Effects::RippleLit);
+    let ripple_duration = Duration::from_millis(800);
+    let propagation_speed = 150.0; // ms per zone (Ripple only)
 
-pub fn play(manager: &mut Inner, p: &Profile) {
-    // Welcome to the definition of i-don't-know-what-im-doing
-    let stop_signals = manager.stop_signals.clone();
-
-    let kill_thread = Arc::new(AtomicBool::new(false));
-    let exit_thread = kill_thread.clone();
-
-    enum Event {
-        KeyPress(Keycode),
-        KeyRelease(Keycode),
-    }
-
-    let (tx, rx) = crossbeam_channel::unbounded::<Event>();
-
-    thread::spawn(move || {
-        // Do this in order to avoid having to store the event handler struct somewhere,
-        // since it saves no data and serves only as a fancy function proxy for interacting with the real event loop
-        // This keeps the effect self contained, and other effects should probably use the same pattern
-        let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap_or(DeviceEventsHandler {});
-
-        // tx_clone.send(Event::KeyPress(Keycode::Meta)).unwrap();
-        let tx_clone = tx.clone();
-
-        let press_guard = event_handler.on_key_down(move |key| {
-            stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
-
-            let _ = tx_clone.send(Event::KeyPress(*key));
-        });
-
-        let release_guard = event_handler.on_key_up(move |key| {
-            let _ = tx.send(Event::KeyRelease(*key));
-        });
-
-        loop {
-            if exit_thread.load(Ordering::SeqCst) {
-                drop(press_guard);
-                drop(release_guard);
+    // 1. Process new key presses from the global receiver
+    while let Ok(key) = manager.key_rx.try_recv() {
+        for (i, zone) in KEY_ZONES.iter().enumerate() {
+            if zone.contains(&key) {
+                manager.ripple_state.push(ActiveRipple {
+                    origin_zone: i,
+                    start_time: Instant::now(),
+                });
                 break;
             }
-
-            thread::sleep(Duration::from_millis(5));
         }
-    });
-
-    let mut zone_pressed: [HashSet<Keycode>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
-    let mut zone_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
-
-    let mut last_step_time = Instant::now();
-
-    while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-        match rx.try_recv() {
-            Ok(event) => match event {
-                Event::KeyPress(key) => {
-                    for (i, zone) in KEY_ZONES.iter().enumerate() {
-                        if zone.contains(&key) {
-                            zone_pressed[i].insert(key);
-                        }
-                    }
-
-                    manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
-                }
-                Event::KeyRelease(key) => {
-                    for (i, zone) in KEY_ZONES.iter().enumerate() {
-                        if zone.contains(&key) {
-                            zone_pressed[i].remove(&key);
-                        }
-                    }
-                }
-            },
-            Err(err) => {
-                if err == crossbeam_channel::TryRecvError::Disconnected {
-                    break;
-                }
-            }
-        }
-
-        zone_state = advance_zone_state(zone_state, &mut last_step_time, &p.speed);
-
-        for (i, pressed) in zone_pressed.iter().enumerate() {
-            if !pressed.is_empty() {
-                zone_state[i] = RippleMove::Center;
-            }
-        }
-
-        let rgb_array = p.rgb_array();
-        let mut final_arr: [u8; 12] = [0; 12];
-        // Initialize with base color
-        for i in (0..12).step_by(3) {
-            final_arr[i] = p.base_color[0];
-            final_arr[i + 1] = p.base_color[1];
-            final_arr[i + 2] = p.base_color[2];
-        }
-
-        for (i, ripple_move) in zone_state.iter().enumerate() {
-            if ripple_move != &RippleMove::Off {
-                final_arr[(i * 3)..((i * 3) + 3)].copy_from_slice(&rgb_array[(i * 3)..((i * 3) + 3)]);
-            }
-        }
-
-        manager.keyboard.transition_colors_to(&final_arr, 20, 0).unwrap();
-        thread::sleep(Duration::from_millis(50));
     }
 
-    kill_thread.store(true, Ordering::SeqCst);
-}
+    // 2. Clean up old ripples
+    manager.ripple_state.retain(|r| r.start_time.elapsed() < ripple_duration);
 
-fn advance_zone_state(zone_state: [RippleMove; 4], last_step_time: &mut Instant, speed: &u8) -> [RippleMove; 4] {
+    // 3. Calculate frame
+    let mut zone_intensities: [f32; 4] = [0.0; 4];
     let now = Instant::now();
 
-    if now - *last_step_time > Duration::from_millis((200 / *speed) as u64) {
-        let mut new_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
-
-        *last_step_time = now;
-
-        // Process moves first, then add centers
-        for (i, zone_move) in zone_state.iter().enumerate() {
-            match zone_move {
-                RippleMove::Left => {
-                    if i != 0 {
-                        if let Some(left) = new_state.get_mut(i - 1) {
-                            *left = RippleMove::Left;
-                        }
-                    }
-                }
-
-                RippleMove::Right => {
-                    if let Some(right) = new_state.get_mut(i + 1) {
-                        *right = RippleMove::Right;
-                    }
-                }
-                _ => {}
+    for ripple in &manager.ripple_state {
+        let elapsed = now.duration_since(ripple.start_time).as_millis() as f32;
+        if is_ripple_lit {
+            // True RippleLit:
+            // - All zones stay on base color.
+            // - Only the pressed/origin zone transitions to secondary/zone color.
+            let life_progress = elapsed / 450.0;
+            if life_progress < 1.0 {
+                let primary_intensity = (-(life_progress - 0.25).powi(2) / 0.08).exp();
+                zone_intensities[ripple.origin_zone] = (zone_intensities[ripple.origin_zone] + primary_intensity).min(1.0);
             }
-        }
+        } else {
+            // Ripple: keeps the original expanding wave behavior.
+            for zone_idx in 0..4 {
+                let distance = (zone_idx as f32 - ripple.origin_zone as f32).abs();
+                let propagation_delay = distance * propagation_speed;
 
-        for (i, ripple_move) in zone_state.iter().enumerate() {
-            if matches!(ripple_move, RippleMove::Center) {
-                if i != 0 {
-                    if let Some(left) = new_state.get_mut(i - 1) {
-                        *left = RippleMove::Left;
+                if elapsed > propagation_delay {
+                    let time_since_arrival = elapsed - propagation_delay;
+                    let life_progress = time_since_arrival / 400.0;
+
+                    if life_progress < 1.0 {
+                        let wave_intensity = (-(life_progress - 0.3).powi(2) / 0.1).exp();
+                        zone_intensities[zone_idx] = (zone_intensities[zone_idx] + wave_intensity).min(1.0);
                     }
-                }
-
-                if let Some(right) = new_state.get_mut(i + 1) {
-                    *right = RippleMove::Right;
                 }
             }
         }
-
-        new_state
-    } else {
-        zone_state
     }
+
+    let rgb_array = p.rgb_array();
+    let mut final_arr: [u8; 12] = [0; 12];
+    let base_color = if is_ripple_lit { p.base_color } else { [0, 0, 0] };
+
+    for i in 0..4 {
+        let intensity = zone_intensities[i];
+        let target_color = [rgb_array[i * 3], rgb_array[i * 3 + 1], rgb_array[i * 3 + 2]];
+
+        final_arr[i * 3] = lerp(base_color[0], target_color[0], intensity);
+        final_arr[i * 3 + 1] = lerp(base_color[1], target_color[1], intensity);
+        final_arr[i * 3 + 2] = lerp(base_color[2], target_color[2], intensity);
+    }
+
+    manager.paint(p, &final_arr);
+}
+
+fn lerp(a: u8, b: u8, t: f32) -> u8 {
+    (a as f32 * (1.0 - t) + b as f32 * t) as u8
 }

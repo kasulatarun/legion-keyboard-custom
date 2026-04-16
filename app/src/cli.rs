@@ -13,6 +13,7 @@ use crate::{
         profile::{self, Profile},
         ManagerCreationError,
     },
+    persist::Settings,
     DENY_HIDING,
 };
 
@@ -157,7 +158,14 @@ pub fn try_cli() -> Result<GuiCommand, CliError> {
 }
 
 fn handle_cli_output(output_type: OutputType) -> Result<GuiCommand, CliError> {
-    let manager_result = manager::EffectManager::new(manager::OperationMode::Cli);
+    let settings = Settings::load();
+    let manager_result = manager::EffectManager::new(
+        manager::OperationMode::Cli,
+        settings.profiles,
+        settings.automation_rules,
+        settings.master_off,
+        None,
+    );
     let instance_not_unique = manager_result.as_ref().err().is_some_and(|err| &ManagerCreationError::InstanceAlreadyRunning == err.current_context());
 
     if matches!(output_type, OutputType::Profile(..) | OutputType::Custom(..)) && instance_not_unique {

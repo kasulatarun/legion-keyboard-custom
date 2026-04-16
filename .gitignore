@@ -1,18 +1,61 @@
-# Github
+# GitHub
 .gitattributes
 
 # VSCode
-.vscode
+.vscode/
 
 # Rust
-target
+target/
+**/target/
 
 # Nix
-.direnv
-result
+.direnv/
+result/
+
+# Cargo
+Cargo.lock
+
+# OS/Home Junk (exclude untracked)
+.DS_Store
+Thumbs.db
+*.tmp
+temp/
+tmp/
+
+# Home dirs (critical exclude)
+AppData/
+Documents/
+Downloads/
+Desktop/
+OneDrive/
+.vscode/
+.cargo/
+.rustup/
+.gradle/
+.cache/
+.config/
+.local/
+.unity/
+.eclipse/
+.gradle/
+.m2/
+.android/
+.expo/
+.nvidia*/
+.zotero/
+.vcpkg/
+
+# OneDrive paths from deletions
+OneDrive/Desktop/todo-app/
 
 # Other
 things.md
-*.json
-!vcpkg.json
-.history
+*.lnk
+*.exe  # except built
+!legion-kb-rgb.exe
+*.zip
+.history/
+.airsdk/
+.antigravity/
+etc.
+**/

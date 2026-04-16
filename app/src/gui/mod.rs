@@ -57,7 +57,7 @@ pub struct App {
 
 pub enum GuiMessage {
     CycleProfiles,
-    LiveFrame([u8; 12]),
+    LiveFrame(#[allow(dead_code)] [u8; 12]),
     Quit,
 }
 

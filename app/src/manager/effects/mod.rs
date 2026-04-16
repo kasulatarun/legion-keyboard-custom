@@ -9,35 +9,17 @@ use crate::{
 
 pub mod aesthetic;
 pub mod ambient;
-pub mod apm_pulse;
 
 pub mod audio;
-pub mod battery;
-pub mod biorhythms;
-pub mod collider;
 pub mod custom;
 pub mod cyber;
 pub mod default_ui;
-pub mod fluid_flow;
-pub mod focus_lamp;
-pub mod frequency_audio;
-pub mod ghost_keys;
-pub mod glitch;
-pub mod gravity_well;
-pub mod health_trace;
 pub mod heartbeat;
 pub mod lightning;
-pub mod mental_flow;
-pub mod morse;
 pub mod nature;
-pub mod network;
-pub mod pomodoro;
 pub mod prism_shift;
-pub mod pulse_static;
 pub mod ripple;
-pub mod sonar_ping;
 pub mod swipe;
-pub mod system_monitor;
 pub mod vhs;
 pub mod zones;
 

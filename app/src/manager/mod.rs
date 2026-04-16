@@ -1,5 +1,5 @@
 use crate::{
-    enums::{AutomationRule, Direction, Effects, Message},
+    enums::{AutomationRule, Effects, Message},
     gui::GuiMessage,
 };
 
@@ -7,14 +7,14 @@ use crossbeam_channel::{Receiver, Sender};
 use device_query::Keycode;
 use device_query::{DeviceEvents, DeviceEventsHandler};
 use effects::{
-    aesthetic, ambient, audio, custom, cyber, lightning, nature, prism_shift, ripple, swipe, vhs,
+    aesthetic, ambient, audio, custom, cyber, heartbeat, lightning, nature, prism_shift, ripple, swipe, vhs,
 };
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
 use rand::{rng, rngs::ThreadRng};
 use single_instance::SingleInstance;
-use std::collections::HashMap;
+
 use std::sync::Arc;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
@@ -59,7 +59,6 @@ pub(crate) struct Inner {
 
     // Animation States
     ripple_state: Vec<ActiveRipple>,
-    ghost_key_state: HashMap<usize, f32>, // zone index -> intensity (0.0 to 1.0)
     heartbeat_start: Option<Instant>,
 }
 
@@ -116,7 +115,6 @@ impl EffectManager {
             automation_rules,
             _single_instance: single_instance,
             ripple_state: Vec::new(),
-            ghost_key_state: std::collections::HashMap::new(),
             heartbeat_start: None,
         };
 
@@ -213,15 +211,6 @@ impl EffectManager {
     pub fn set_profile(&self, profile: Profile) {
         self._stop_signals.manager_stop_signal.store(true, Ordering::SeqCst);
         let _ = self.tx.send(Message::Profile { profile });
-    }
-
-    pub fn update_rules(&self, rules: Vec<AutomationRule>) {
-        let _ = self.tx.send(Message::UpdateAutomationRules { rules });
-    }
-
-    pub fn update_master_power(&self, off: bool) {
-        self._stop_signals.manager_stop_signal.store(true, Ordering::SeqCst);
-        let _ = self.tx.send(Message::UpdateMasterPower { off });
     }
 
     pub fn custom_effect(&self, effect: CustomEffect) {

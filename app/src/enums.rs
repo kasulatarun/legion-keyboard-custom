@@ -10,11 +10,11 @@ pub struct AutomationRule {
 
 #[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, Debug, IntoStaticStr, Default)]
 pub enum Effects {
-    #[default]
     NeonDream {
         #[serde(default = "default_speed")]
         speed: u8,
     },
+    #[default]
     Lightning,
     SmoothWave {
         mode: SwipeMode,
@@ -109,9 +109,7 @@ fn default_speed() -> u8 {
     1
 }
 
-fn default_pomodoro_duration() -> u32 {
-    25
-}
+
 
 fn default_sensitivity() -> f32 {
     1.0
@@ -223,7 +221,9 @@ pub enum Message {
     CustomEffect { effect: CustomEffect },
     Profile { profile: Profile },
     AutoProfile { name: String },
+    #[allow(dead_code)]
     UpdateAutomationRules { rules: Vec<AutomationRule> },
+    #[allow(dead_code)]
     UpdateMasterPower { off: bool },
     Exit,
 }

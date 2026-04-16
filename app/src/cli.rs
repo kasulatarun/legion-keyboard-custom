@@ -173,7 +173,7 @@ fn handle_cli_output(output_type: OutputType) -> Result<GuiCommand, CliError> {
         return Ok(GuiCommand::Exit);
     }
 
-    let mut effect_manager = manager_result.change_context(CliError)?;
+    let effect_manager = manager_result.change_context(CliError)?;
 
     let command_result = match output_type {
         OutputType::Profile(profile) => {

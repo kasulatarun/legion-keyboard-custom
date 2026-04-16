@@ -22,6 +22,9 @@ pub mod ripple;
 pub mod swipe;
 pub mod vhs;
 pub mod zones;
+pub mod synth;
+pub mod matrix;
+pub mod glitch;
 
 pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &mut bool, theme: &crate::gui::style::Theme) {
     let mut effect = profile.effect;
@@ -62,7 +65,10 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
         | Effects::CyberPulse { speed }
         | Effects::StarryNight { speed }
         | Effects::SoftBloom { speed }
-        | Effects::SunsetGlow { speed } => {
+        | Effects::SunsetGlow { speed }
+        | Effects::Synthwave { speed }
+        | Effects::Matrix { speed }
+        | Effects::Glitch { speed } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;
                 show_brightness(ui, profile, update_lights);

@@ -7,7 +7,7 @@ use crossbeam_channel::{Receiver, Sender};
 use device_query::Keycode;
 use device_query::{DeviceEvents, DeviceEventsHandler};
 use effects::{
-    aesthetic, ambient, audio, custom, cyber, heartbeat, lightning, nature, prism_shift, ripple, swipe, vhs,
+    aesthetic, ambient, audio, custom, cyber, heartbeat, lightning, nature, prism_shift, ripple, swipe, vhs, synth, matrix, glitch
 };
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
@@ -293,6 +293,9 @@ impl Inner {
             Effects::StarryNight { .. } => nature::play_starry_night(self, profile),
             Effects::SoftBloom { .. } => aesthetic::play_soft_bloom(self, profile),
             Effects::SunsetGlow { .. } => aesthetic::play_sunset_glow(self, profile),
+            Effects::Synthwave { .. } => synth::play_synthwave(self, profile),
+            Effects::Matrix { .. } => matrix::play(self, profile),
+            Effects::Glitch { .. } => glitch::play(self, profile),
         }
     }
 

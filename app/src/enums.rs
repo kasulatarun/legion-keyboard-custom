@@ -75,6 +75,18 @@ pub enum Effects {
         #[serde(default = "default_speed")]
         speed: u8,
     },
+    Synthwave {
+        #[serde(default = "default_speed")]
+        speed: u8,
+    },
+    Matrix {
+        #[serde(default = "default_speed")]
+        speed: u8,
+    },
+    Glitch {
+        #[serde(default = "default_speed")]
+        speed: u8,
+    },
 }
 
 impl Effects {
@@ -101,6 +113,9 @@ impl Effects {
             Self::StarryNight { .. } => "Nature: Twinkling dots on a dark background.",
             Self::SoftBloom { .. } => "Subtle: Breathing intensity across zones.",
             Self::SunsetGlow { .. } => "Vibrant: Slow-shifting deep reds and oranges.",
+            Self::Synthwave { .. } => "Retro: Aesthetic pink and cyan waves.",
+            Self::Matrix { .. } => "Hacker: Raining digital green.",
+            Self::Glitch { .. } => "Cyber: Random chaotic flickers.",
         }
     }
 }
@@ -165,6 +180,9 @@ impl Effects {
                 | Self::StarryNight { .. }
                 | Self::SoftBloom { .. }
                 | Self::SunsetGlow { .. }
+                | Self::Synthwave { .. }
+                | Self::Matrix { .. }
+                | Self::Glitch { .. }
         )
     }
 
@@ -194,6 +212,9 @@ impl Effects {
                 | Self::StarryNight { .. }
                 | Self::SoftBloom { .. }
                 | Self::SunsetGlow { .. }
+                | Self::Synthwave { .. }
+                | Self::Matrix { .. }
+                | Self::Glitch { .. }
         )
     }
 

@@ -44,7 +44,7 @@ pub fn play(manager: &mut Inner, profile: &Profile) {
         
         // Speed control
         let wait = match profile.effect {
-            crate::enums::Effects::DigitalRain { speed } => (150 / speed.max(1)) as u64,
+            crate::enums::Effects::Matrix { speed } => (150 / speed.max(1)) as u64,
             _ => 100,
         };
         
